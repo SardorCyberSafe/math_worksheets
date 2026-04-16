@@ -1,32 +1,17 @@
+#!/usr/bin/env python3
+"""
+Qisqa Ko'paytirish Formulalari - Generator
+LaTeX orqali PDF yaratish
+"""
+
 import random
 import os
-from fpdf import FPDF
-from fpdf.enums import XPos, YPos
+import subprocess
+import shutil
 
-random.seed(None)
-
-FORMULA_TEMPLATES = [
-    ("kvadrat_yigindi", r"(a+b)^2 = a^2+2ab+b^2", 1),
-    ("kvadrat_ayirma", r"(a-b)^2 = a^2-2ab+b^2", 1),
-    ("kvadrat_ayirma_f", r"a^2-b^2 = (a+b)(a-b)", 1),
-    ("kub_yigindi", r"(a+b)^3 = a^3+3a^2b+3ab^2+b^3", 2),
-    ("kub_ayirma", r"(a-b)^3 = a^3-3a^2b+3ab^2-b^3", 2),
-    ("kub_yigindi_f", r"a^3+b^3 = (a+b)(a^2-ab+b^2)", 2),
-    ("kub_ayirma_f", r"a^3-b^3 = (a-b)(a^2+ab+b^2)", 2),
-    ("kompleks_kv_yig", r"(ax+by)^2 = a^2x^2+2abxy+b^2y^2", 3),
-    ("kompleks_kv_ayr", r"(ax-by)^2 = a^2x^2-2abxy+b^2y^2", 3),
-    ("kompleks_fark_f", r"(ax)^2-(by)^2 = (ax+by)(ax-by)", 3),
-    ("uchinchi_kompl_yig", r"(ax+by)^3", 4),
-    ("uchinchi_kompl_ayr", r"(ax-by)^3", 4),
-    ("kop_o_z_1", r"(x+a)(x+b) = x^2+(a+b)x+ab", 2),
-    ("kop_o_z_2", r"(x-a)(x-b) = x^2-(a+b)x+ab", 2),
-    ("uch_o_z_1", r"(x+a)(x+b)(x+c)", 4),
-    ("yigindi_kv", r"(a+b+c)^2", 4),
-    ("ikki_kv_yig", r"(a+b)^2+(a-b)^2 = 2(a^2+b^2)", 3),
-    ("ikki_kv_ayr", r"(a+b)^2-(a-b)^2 = 4ab", 3),
-]
-
-DIFF_NAMES = {1: "Oson", 2: "O'rtacha", 3: "Qiyin", 4: "Juda Qiyin"}
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
+TEMPLATE_PATH = os.path.join(SCRIPT_DIR, "template.tex")
 
 
 def g(d, sign=True, zeron=False):
@@ -248,7 +233,31 @@ def make_problem(fkey, diff):
     return {"question": q, "answer": ans, "difficulty": diff}
 
 
-def generate_worksheet(seed_val, per_diff=5):
+FORMULA_TEMPLATES = [
+    ("kvadrat_yigindi", r"(a+b)^2 = a^2+2ab+b^2", 1),
+    ("kvadrat_ayirma", r"(a-b)^2 = a^2-2ab+b^2", 1),
+    ("kvadrat_ayirma_f", r"a^2-b^2 = (a+b)(a-b)", 1),
+    ("kub_yigindi", r"(a+b)^3 = a^3+3a^2b+3ab^2+b^3", 2),
+    ("kub_ayirma", r"(a-b)^3 = a^3-3a^2b+3ab^2-b^3", 2),
+    ("kub_yigindi_f", r"a^3+b^3 = (a+b)(a^2-ab+b^2)", 2),
+    ("kub_ayirma_f", r"a^3-b^3 = (a-b)(a^2+ab+b^2)", 2),
+    ("kompleks_kv_yig", r"(ax+by)^2 = a^2x^2+2abxy+b^2y^2", 3),
+    ("kompleks_kv_ayr", r"(ax-by)^2 = a^2x^2-2abxy+b^2y^2", 3),
+    ("kompleks_fark_f", r"(ax)^2-(by)^2 = (ax+by)(ax-by)", 3),
+    ("uchinchi_kompl_yig", r"(ax+by)^3", 4),
+    ("uchinchi_kompl_ayr", r"(ax-by)^3", 4),
+    ("kop_o_z_1", r"(x+a)(x+b) = x^2+(a+b)x+ab", 2),
+    ("kop_o_z_2", r"(x-a)(x-b) = x^2-(a+b)x+ab", 2),
+    ("uch_o_z_1", r"(x+a)(x+b)(x+c)", 4),
+    ("yigindi_kv", r"(a+b+c)^2", 4),
+    ("ikki_kv_yig", r"(a+b)^2+(a-b)^2 = 2(a^2+b^2)", 3),
+    ("ikki_kv_ayr", r"(a+b)^2-(a-b)^2 = 4ab", 3),
+]
+
+DIFF_NAMES = {1: "Oson", 2: "O'rtacha", 3: "Qiyin", 4: "Juda Qiyin"}
+
+
+def generate_worksheet(seed_val, per_diff=10):
     random.seed(seed_val)
     problems = []
     for diff in [1, 2, 3, 4]:
@@ -260,121 +269,118 @@ def generate_worksheet(seed_val, per_diff=5):
     return problems
 
 
-def build_pdf_single(problems, num, pdf=None):
-    if pdf is None:
-        pdf = FPDF()
-        pdf.set_margins(20, 20, 20)
-        pdf.set_auto_page_break(True, margin=20)
-
-    pdf.add_page()
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(
-        0,
-        12,
-        "Qisqa Ko'paytirish Formulalari",
-        new_x=XPos.LMARGIN,
-        new_y=YPos.NEXT,
-        align="C",
-    )
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(0, 8, f"Qo'lyozma N{num}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(
-        0,
-        6,
-        "Har bir misolni yeching va kengaytirilgan shaklda yozing",
-        new_x=XPos.LMARGIN,
-        new_y=YPos.NEXT,
-        align="C",
-    )
-    pdf.ln(8)
-
+def build_latex(problems, num):
     by_diff = {1: [], 2: [], 3: [], 4: []}
     for p in problems:
         by_diff[p["difficulty"]].append(p)
 
+    questions_tex = ""
     for diff in [1, 2, 3, 4]:
         if not by_diff[diff]:
             continue
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_fill_color(220, 220, 220)
-        pdf.cell(
-            0,
-            9,
-            f"  {DIFF_NAMES[diff]}",
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-            fill=True,
-        )
-        pdf.ln(4)
+        questions_tex += f"\\subsection*{{{DIFF_NAMES[diff]}}}\n"
+        questions_tex += "\\begin{{enumerate}}\n"
+        for p in by_diff[diff]:
+            questions_tex += f"\\item $ {p['question']} $\n"
+        questions_tex += "\\end{enumerate}\n"
+        questions_tex += "\\vspace{{0.3cm}}\n"
 
-        for i, p in enumerate(by_diff[diff]):
-            pdf.set_font("Helvetica", "B", 13)
-            pdf.cell(10, 8, f"{i + 1}.", new_x=XPos.RIGHT, new_y=YPos.TOP)
-            pdf.cell(0, 8, p["question"], new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-            pdf.set_font("Helvetica", "", 11)
-            pdf.set_x(20 + 10)
-            pdf.cell(0, 7, f"Javob: {p['answer']}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-            pdf.ln(5)
-            if pdf.get_y() > 265:
-                pdf.add_page()
+    answers_tex = ""
+    for diff in [1, 2, 3, 4]:
+        if not by_diff[diff]:
+            continue
+        answers_tex += f"\\subsection*{{{DIFF_NAMES[diff]}}}\n"
+        answers_tex += "\\begin{enumerate}\n"
+        for p in by_diff[diff]:
+            answers_tex += f"\\item $ {p['question']} = {p['answer']} $\n"
+        answers_tex += "\\end{enumerate}\n"
+        answers_tex += "\\vspace{0.3cm}\n"
 
-    pdf.add_page()
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(
-        0,
-        10,
-        f"Javoblar -- Qo'lyozma N{num}",
-        new_x=XPos.LMARGIN,
-        new_y=YPos.NEXT,
-        align="C",
+    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
+        template = f.read()
+
+    latex = template.replace("{{WORKSHEET_NUM}}", str(num))
+    latex = latex.replace("{{QUESTIONS}}", questions_tex)
+    latex = latex.replace("{{ANSWERS}}", answers_tex)
+    latex = latex.replace("{{TOTAL}}", str(len(problems)))
+
+    return latex
+
+
+def compile_latex(latex_content, worksheet_num):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    tex_path = os.path.join(OUTPUT_DIR, f"worksheet_{worksheet_num}.tex")
+    with open(tex_path, "w", encoding="utf-8") as f:
+        f.write(latex_content)
+
+    result = subprocess.run(
+        [
+            "pdflatex",
+            "-interaction=nonstopmode",
+            f"-output-directory={OUTPUT_DIR}",
+            tex_path,
+        ],
+        capture_output=True,
+        text=True,
     )
-    pdf.ln(6)
 
-    for diff in [1, 2, 3, 4]:
-        if not by_diff[diff]:
-            continue
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.set_fill_color(235, 235, 235)
-        pdf.cell(
-            0,
-            8,
-            f"  {DIFF_NAMES[diff]}",
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-            fill=True,
-        )
-        pdf.ln(3)
+    for ext in [".aux", ".log"]:
+        try:
+            os.remove(tex_path.replace(".tex", ext))
+        except:
+            pass
 
-        for i, p in enumerate(by_diff[diff]):
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(10, 7, f"{i + 1}.", new_x=XPos.RIGHT, new_y=YPos.TOP)
-            pdf.set_font("Helvetica", "", 11)
-            pdf.cell(
-                0,
-                7,
-                f"{p['question']} = {p['answer']}",
-                new_x=XPos.LMARGIN,
-                new_y=YPos.NEXT,
-            )
-            if pdf.get_y() > 270:
-                pdf.add_page()
+    pdf_path = os.path.join(OUTPUT_DIR, f"worksheet_{worksheet_num}.pdf")
+    return os.path.exists(pdf_path), result.stdout, result.stderr
 
-    return pdf
+
+def merge_pdfs(output_filename="barcha_misollar.pdf"):
+    try:
+        from PyPDF2 import PdfMerger
+
+        merger = PdfMerger()
+        for n in range(1, 11):
+            pdf_path = os.path.join(OUTPUT_DIR, f"worksheet_{n}.pdf")
+            if os.path.exists(pdf_path):
+                merger.append(pdf_path)
+        out_path = os.path.join(SCRIPT_DIR, output_filename)
+        merger.write(out_path)
+        merger.close()
+        return out_path
+    except ImportError:
+        return None
 
 
 def main():
-    pdf = FPDF()
-    pdf.set_margins(20, 20, 20)
-    pdf.set_auto_page_break(True, margin=20)
+    print("=" * 50)
+    print("Qisqa Ko'paytirish Formulalari - Generator")
+    print("=" * 50)
+
+    if os.path.exists(OUTPUT_DIR):
+        shutil.rmtree(OUTPUT_DIR)
+    os.makedirs(OUTPUT_DIR)
+
+    if not os.path.exists(TEMPLATE_PATH):
+        print(f"Xatolik: template.tex topilmadi!")
+        return
 
     for n in range(1, 11):
         problems = generate_worksheet(seed_val=n * 777, per_diff=10)
-        pdf = build_pdf_single(problems, n, pdf)
-        print(f"Qo'shildi: Qo'lyozma N{n} ({len(problems)} ta misol)")
+        latex_content = build_latex(problems, n)
+        success, stdout, stderr = compile_latex(latex_content, n)
+        if success:
+            print(f"  OK   Qo'lyozma N{n} ({len(problems)} ta misol)")
+        else:
+            print(f"  XATO Qo'lyozma N{n}")
+            print(f"        {stderr[-200:] if stderr else "Noma'lum xatolik"}")
 
-    pdf.output("/content/misollar_barchasi.pdf")
-    print(f"\nYaratildi: misollar_barchasi.pdf (400 ta misol)")
+    print("\nPDFlarni birlashtirish...")
+    final_path = merge_pdfs("barcha_misollar.pdf")
+    if final_path:
+        print(f"Tayyor: {final_path}")
+        print(f"Umumiy: 400 ta misol, 10 ta qo'lyozma")
+    else:
+        print("PyPDF2 o'rnatilmagan - PDFlar output/ papkasida alohida")
 
 
 if __name__ == "__main__":

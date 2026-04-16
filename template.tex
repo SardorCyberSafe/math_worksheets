@@ -1,19 +1,30 @@
-%template.tex
-\documentclass{article}
+\documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[margin=2cm]{geometry}
 \usepackage{amsmath}
-
-\title{Qisqa Ko'paytirish Formulalari}
-\author{Math Worksheets}
+\usepackage{amssymb}
 
 \begin{document}
 
-\maketitle
+\begin{center}
+\textbf{\LARGE Qisqa Ko'paytirish Formulalari} \\[0.3cm]
+\textbf{\large Qo'lyozma N{{WORKSHEET_NUM}} --- {{TOTAL}} ta misol} \\[0.2cm]
+\normalsize Har bir misolni yeching va kengaytirilgan shaklda yozing
+\end{center}
 
-\section Kvadrat yigindi
-$(a+b)^2 = a^2 + 2ab + b^2$
+\vspace{0.5cm}
 
-\section Kvadrat ayirma
-$(a-b)^2 = a^2 - 2ab + b^2$
+{{QUESTIONS}}
+
+\newpage
+
+\begin{center}
+\textbf{\LARGE Javoblar --- Qo'lyozma N{{WORKSHEET_NUM}}}
+\end{center}
+
+\vspace{0.5cm}
+
+{{ANSWERS}}
 
 \end{document}
